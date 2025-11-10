@@ -85,58 +85,65 @@ class DokumenController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi minimal
-        $request->validate([
-            'judul_dokumen' => 'nullable|string|max:255',
-            'judul'         => 'nullable|string|max:255',
-            'file_upload'   => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
-            'file'          => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
-            'kategori_id'   => 'nullable|integer|exists:kategori,kategori_id',
-            'nomor_dokumen' => 'nullable|string|max:100',
-            'tanggal_terbit'=> 'nullable|date',
-            'deskripsi'     => 'nullable|string',
-            'status'        => 'nullable|string|max:50',
-        ]);
+        try {
+            // Validasi input
+            $request->validate([
+                'judul_dokumen' => 'nullable|string|max:255',
+                'judul'         => 'nullable|string|max:255',
+                'file_upload'   => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
+                'file'          => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
+                'kategori_id'   => 'nullable|integer|exists:kategori,kategori_id',
+                'nomor_dokumen' => 'nullable|string|max:100',
+                'tanggal_terbit'=> 'nullable|date',
+                'deskripsi'     => 'nullable|string',
+                'status'        => 'nullable|string|max:50',
+            ]);
 
-        // Ambil input judul dgn fallback
-        $judul = $request->input('judul_dokumen') ?? $request->input('judul');
-        if (!$judul) {
-            return back()->withErrors(['judul_dokumen' => 'Judul dokumen wajib diisi.']);
+            // Ambil input judul dgn fallback
+            $judul = $request->input('judul_dokumen') ?? $request->input('judul');
+            if (!$judul) {
+                return back()->withErrors(['judul_dokumen' => 'Judul dokumen wajib diisi.']);
+            }
+
+            // Ambil file dgn fallback
+            $file = $request->file('file_upload') ?? $request->file('file');
+            if (!$file) {
+                return back()->withErrors(['file_upload' => 'File wajib diunggah.']);
+            }
+
+            // Folder tujuan dalam bucket
+            $folderPath = 'dokumen-uploads';
+
+            // Nama file aman + unik
+            $originalName = $file->getClientOriginalName();
+            $base = pathinfo($originalName, PATHINFO_FILENAME);
+            $ext  = $file->getClientOriginalExtension();
+            $safe = \Illuminate\Support\Str::slug($base, '-');
+            $uniqueFileName = now()->format('YmdHis').'-'.\Illuminate\Support\Str::random(6).'-'.$safe.($ext ? '.'.$ext : '');
+
+            // Simpan ke MinIO
+            $path = \Illuminate\Support\Facades\Storage::disk('minio')->putFileAs($folderPath, $file, $uniqueFileName);
+
+            // Simpan ke database
+            \App\Models\Dokumen::create([
+                'judul'          => $judul,
+                'nomor_dokumen'  => $request->input('nomor_dokumen'),
+                'tanggal_terbit' => $request->input('tanggal_terbit'),
+                'kategori_id'    => $request->input('kategori_id'),
+                'file_path'      => $path, // contoh: dokumen-uploads/20251110-abc123-judul.pdf
+                'deskripsi'      => $request->input('deskripsi'),
+                'created_by'     => \Illuminate\Support\Facades\Auth::id(),
+                'status'         => $request->input('status', 'draft'),
+            ]);
+
+            // Notifikasi sukses
+            return back()->with('success', 'Dokumen berhasil di-upload ke MinIO dan data tersimpan!');
+        } catch (\Throwable $e) {
+            // Kalau error (upload gagal, DB error, dll)
+            return back()->with('error', 'Upload gagal: ' . $e->getMessage());
         }
-
-        // Ambil file dgn fallback
-        $file = $request->file('file_upload') ?? $request->file('file');
-        if (!$file) {
-            return back()->withErrors(['file_upload' => 'File wajib diunggah.']);
-        }
-
-        // Folder tujuan dalam bucket
-        $folderPath = 'dokumen-uploads';
-
-        // Nama file aman + unik
-        $originalName = $file->getClientOriginalName();
-        $base = pathinfo($originalName, PATHINFO_FILENAME);
-        $ext  = $file->getClientOriginalExtension();
-        $safe = Str::slug($base, '-');
-        $uniqueFileName = now()->format('YmdHis').'-'.Str::random(6).'-'.$safe.($ext ? '.'.$ext : '');
-
-        // Simpan ke MinIO
-        $path = Storage::disk('minio')->putFileAs($folderPath, $file, $uniqueFileName);
-
-        // Simpan ke DB
-        Dokumen::create([
-            'judul'          => $judul,
-            'nomor_dokumen'  => $request->input('nomor_dokumen'),
-            'tanggal_terbit' => $request->input('tanggal_terbit'),
-            'kategori_id'    => $request->input('kategori_id'),
-            'file_path'      => $path,            // contoh: dokumen-uploads/20251110-abc123-judul.pdf
-            'deskripsi'      => $request->input('deskripsi'),
-            'created_by'     => Auth::id(),
-            'status'         => $request->input('status', 'draft'),
-        ]);
-
-        return back()->with('success', 'File berhasil di-upload ke MinIO dan data tersimpan!');
     }
+
 
     /**
      * Update metadata dokumen + opsi ganti file.

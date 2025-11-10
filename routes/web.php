@@ -23,30 +23,22 @@ Route::prefix('tu')->middleware(['auth', 'checkRole:tu'])->group(function () {
     Route::get('/dashboard', fn() => view('tu.dashboard'))->name('tu.dashboard');
     Route::get('/dokumen-saya', fn() => view('tu.dokumen-saya'))->name('tu.dokumen');
 
-    // ✅ Kirim $kategoris + $dokumens ke view (fix Undefined variable $dokumens)
+    // ✅ GET = tampilkan halaman upload (buka modal dsb)
     Route::get('/upload-dokumen', function () {
-        $kategoris = Kategori::select('kategori_id', 'nama_kategori')
+        $kategoris = \App\Models\Kategori::select('kategori_id', 'nama_kategori')
             ->orderBy('nama_kategori')
             ->get();
 
-        // kalau mau filter per user: ->where('created_by', Auth::id())
-        $dokumens = Dokumen::with(['kategori','creator'])
-            ->orderByDesc('dokumen_id')
-            ->get();
+        $dokumens = \App\Models\Dokumen::orderByDesc('dokumen_id')->get();
 
         return view('tu.upload-dokumen', compact('kategoris', 'dokumens'));
     })->name('tu.upload');
 
+    // ✅ POST = simpan file ke MinIO lewat DokumenController
+    Route::post('/upload-dokumen', [\App\Http\Controllers\DokumenController::class, 'store'])
+        ->name('tu.upload.store');
+
     Route::get('/riwayat-upload', fn() => view('tu.riwayat-upload'))->name('tu.riwayat');
-
-    // Upload -> MinIO via DokumenController
-    Route::post('/upload', [DokumenController::class, 'store'])->name('tu.upload.store');
-
-    // Route ini nambahin show untuk buka file detail atau redirect ke MinIO URL
-    Route::get('/dokumen/{id}', [DokumenController::class, 'show'])->name('dokumen.show');
-
-    // Route open (langsung redirect ke MinIO publik URL)
-    Route::get('/dokumen/{id}/open', [DokumenController::class, 'open'])->name('dokumen.open');
 });
 
 // ==================== DOSEN ====================
