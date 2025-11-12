@@ -3,9 +3,8 @@
 @section('title', 'Upload Dokumen - SiDoRa')
 
 @section('content')
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="{{ asset('css/tu/upload-dokumen-tu.css') }}">
-
+    {{-- CATATAN: Semua pemanggilan CSS dan JS (termasuk Flatpickr) telah dipindahkan ke blok @push di bawah untuk mencegah konflik. --}}
+    
     <div class="p-6 max-w-6xl mx-auto">
         <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-2">Upload Dokumen</h2>
@@ -64,6 +63,8 @@
 
         <div class="form-card bg-white rounded-2xl shadow-xl p-8">
             <form id="uploadForm" method="POST" action="{{ route('tu.store') }}" enctype="multipart/form-data">
+                <input type="hidden" name="owner_user_id" value="{{ Auth::id() }}">
+
                 @csrf
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
@@ -147,7 +148,7 @@
                                 <div id="hakAksesMenu" class="hidden absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto">
                                     <div class="p-3">
                                         <div class="mb-3">
-                                            <input type="text" id="searchUser" placeholder="🔍 Cari pengguna..." class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#050C9C]">
+                                            <input type="text" id="searchUser" placeholder="Cari pengguna..." class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-[#050C9C]">
                                         </div>
                                         
                                         <label class="flex items-center px-3 py-2.5 hover:bg-blue-50 rounded-lg cursor-pointer border-b border-gray-100 mb-2">
@@ -173,8 +174,8 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-end pt-6 border-t border-gray-200">
-                    <button type="submit" class="btn-primary px-8 py-3 rounded-xl bg-[#050C9C] hover:bg-[#040a7a] text-white font-semibold transition shadow-lg shadow-[#050C9C]/20 hover:shadow-xl flex items-center">
+                <div class="flex items-center **justify-center** pt-6 border-t border-gray-200">
+                    <button type="submit" class="btn-primary **w-full md:w-1/2** px-8 py-3 rounded-xl bg-[#050C9C] hover:bg-[#040a7a] text-white font-semibold transition shadow-lg shadow-[#050C9C]/20 hover:shadow-xl flex items-center **justify-center**">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
@@ -184,10 +185,16 @@
             </form>
         </div>
     </div>
+    
 @endsection
 
-{{-- Panggil Flatpickr CDN dan script kustom di bagian stack 'scripts' (asumsi layout utama Anda memiliki @stack('scripts')) --}}
+{{-- ✅ BAGIAN KRUSIAL: Memanggil CSS dan JS menggunakan @push ke dalam @stack di app.blade.php --}}
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{{ asset('css/tu/upload-dokumen-tu.css') }}">
+@endpush
+
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="{{ asset('js/tu/upload-dokumen.js') }}" defer></script>
+<script src="{{ asset('js/tu/upload-dokumen.js') }}"></script>
 @endpush
