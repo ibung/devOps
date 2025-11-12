@@ -3,14 +3,13 @@
 @section('title', 'Upload Dokumen - SiDoRa')
 
 @section('content')
-    {{-- CATATAN: Semua pemanggilan CSS dan JS (termasuk Flatpickr) telah dipindahkan ke blok @push di bawah untuk mencegah konflik. --}}
-    
     <div class="p-6 max-w-6xl mx-auto">
         <div class="mb-8">
             <h2 class="text-3xl font-bold text-gray-900 mb-2">Upload Dokumen</h2>
             <p class="text-gray-600">Lengkapi form di bawah untuk mengupload dokumen baru</p>
         </div>
 
+        {{-- Alert sukses / error --}}
         @if (session('success'))
             <div class="alert-success mb-6 p-4 rounded-xl bg-green-100 text-green-700 border border-green-300 flex items-center justify-between">
                 <div class="flex items-center">
@@ -43,6 +42,7 @@
             </div>
         @endif
 
+        {{-- Validasi error --}}
         @if ($errors->any())
             <div class="mb-6 p-4 rounded-xl bg-red-100 text-red-700 border border-red-300">
                 <div class="flex items-start">
@@ -63,17 +63,14 @@
 
         <div class="form-card bg-white rounded-2xl shadow-xl p-8">
             <form id="uploadForm" method="POST" action="{{ route('tu.store') }}" enctype="multipart/form-data">
-                <input type="hidden" name="owner_user_id" value="{{ Auth::id() }}">
-
                 @csrf
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     
+                    {{-- Kolom kiri --}}
                     <div class="space-y-6">
                         <div>
-                            <label class="block text-sm font-semibold mb-2 text-gray-800">
-                                Judul Dokumen <span class="text-red-500">*</span>
-                            </label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-800">Judul Dokumen <span class="text-red-500">*</span></label>
                             <input type="text" name="judul" value="{{ old('judul') }}" class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#050C9C] focus:ring-2 focus:ring-[#050C9C]/20 outline-none transition" placeholder="Masukkan judul dokumen" required>
                         </div>
 
@@ -83,16 +80,12 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold mb-2 text-gray-800">
-                                Tanggal Terbit <span class="text-red-500">*</span>
-                            </label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-800">Tanggal Terbit <span class="text-red-500">*</span></label>
                             <input type="text" name="tanggal_terbit" id="tanggalTerbit" value="{{ old('tanggal_terbit') }}" placeholder="Pilih atau ketik tanggal (dd/mm/yyyy)" class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#050C9C] focus:ring-2 focus:ring-[#050C9C]/20 outline-none transition" required>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold mb-2 text-gray-800">
-                                Kategori Dokumen <span class="text-red-500">*</span>
-                            </label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-800">Kategori Dokumen <span class="text-red-500">*</span></label>
                             <select name="kategori_id" class="custom-select input-field w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#050C9C] focus:ring-2 focus:ring-[#050C9C]/20 outline-none transition appearance-none bg-white" required>
                                 <option value="" disabled selected>Pilih kategori dokumen</option>
                                 @foreach ($kategoris as $kategori)
@@ -102,11 +95,10 @@
                         </div>
                     </div>
 
+                    {{-- Kolom kanan --}}
                     <div class="space-y-6">
                         <div>
-                            <label class="block text-sm font-semibold mb-2 text-gray-800">
-                                Upload File <span class="text-red-500">*</span>
-                            </label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-800">Upload File <span class="text-red-500">*</span></label>
                             <div class="relative">
                                 <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" id="fileInput" class="hidden" required>
                                 <div id="fileUploadArea" class="file-upload-area w-full px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 transition cursor-pointer">
@@ -127,16 +119,12 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold mb-2 text-gray-800">
-                                Deskripsi <span class="text-red-500">*</span>
-                            </label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-800">Deskripsi <span class="text-red-500">*</span></label>
                             <textarea name="deskripsi" rows="5" class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#050C9C] focus:ring-2 focus:ring-[#050C9C]/20 outline-none transition resize-none" placeholder="Tulis deskripsi singkat dokumen..." required>{{ old('deskripsi') }}</textarea>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold mb-2 text-gray-800">
-                                Hak Akses <span class="text-red-500">*</span>
-                            </label>
+                            <label class="block text-sm font-semibold mb-2 text-gray-800">Hak Akses <span class="text-red-500">*</span></label>
                             <div class="relative">
                                 <div id="hakAksesDropdown" class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#050C9C] focus:ring-2 focus:ring-[#050C9C]/20 outline-none transition appearance-none bg-white cursor-pointer flex items-center justify-between">
                                     <span id="hakAksesLabel" class="text-gray-500 text-sm">Pilih pengguna yang dapat mengakses</span>
@@ -158,7 +146,7 @@
                                         
                                         @foreach ($users as $user)
                                             <label class="user-checkbox flex items-center px-3 py-2.5 hover:bg-gray-50 rounded-lg cursor-pointer transition" data-username="{{ strtolower($user->name) }}" data-useremail="{{ strtolower($user->email) }}">
-                                                <input type="checkbox" name="hak_akses[]" value="{{ $user->id }}" class="hak-akses-checkbox w-4 h-4 text-[#050C9C] border-gray-300 rounded focus:ring-[#050C9C] focus:ring-2">
+                                                <input type="checkbox" name="owner_user_id[]" value="{{ $user->id }}" class="hak-akses-checkbox w-4 h-4 text-[#050C9C] border-gray-300 rounded focus:ring-[#050C9C] focus:ring-2">
                                                 <div class="ml-3 flex-1">
                                                     <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
                                                     <div class="text-xs text-gray-500">{{ $user->email }}</div>
@@ -174,8 +162,8 @@
                     </div>
                 </div>
 
-                <div class="flex items-center **justify-center** pt-6 border-t border-gray-200">
-                    <button type="submit" class="btn-primary **w-full md:w-1/2** px-8 py-3 rounded-xl bg-[#050C9C] hover:bg-[#040a7a] text-white font-semibold transition shadow-lg shadow-[#050C9C]/20 hover:shadow-xl flex items-center **justify-center**">
+                <div class="flex items-center justify-center pt-6 border-t border-gray-200">
+                    <button type="submit" class="btn-primary w-full md:w-1/2 px-8 py-3 rounded-xl bg-[#050C9C] hover:bg-[#040a7a] text-white font-semibold transition shadow-lg shadow-[#050C9C]/20 hover:shadow-xl flex items-center justify-center">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                         </svg>
@@ -185,10 +173,8 @@
             </form>
         </div>
     </div>
-    
 @endsection
 
-{{-- ✅ BAGIAN KRUSIAL: Memanggil CSS dan JS menggunakan @push ke dalam @stack di app.blade.php --}}
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="{{ asset('css/tu/upload-dokumen-tu.css') }}">

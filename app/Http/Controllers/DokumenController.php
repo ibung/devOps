@@ -17,11 +17,11 @@ class DokumenController extends Controller
     // =========================
     public function index(Request $r)
     {
-        $q = Dokumen::with(['kategori','owner'])
+        $q = Dokumen::with(['kategori', 'owner'])
             ->when($r->filled('q'), fn($w) =>
-                $w->where(function($x) use ($r) {
-                    $x->where('judul','ilike','%'.$r->q.'%')
-                      ->orWhere('nomor_dokumen','ilike','%'.$r->q.'%');
+                $w->where(function ($x) use ($r) {
+                    $x->where('judul', 'ilike', '%' . $r->q . '%')
+                      ->orWhere('nomor_dokumen', 'ilike', '%' . $r->q . '%');
                 })
             )
             ->when($r->filled('status'), fn($w) => $w->where('status', $r->status))
@@ -33,7 +33,7 @@ class DokumenController extends Controller
 
     public function show($id)
     {
-        $doc = Dokumen::with(['kategori','owner','komentar.user','versi'])
+        $doc = Dokumen::with(['kategori', 'owner', 'komentar.user', 'versi'])
             ->where('dokumen_id', $id)
             ->firstOrFail();
 
@@ -45,7 +45,7 @@ class DokumenController extends Controller
     // =========================
     public function indexPage(Request $r)
     {
-        $kategori = Kategori::select('kategori_id','nama_kategori')
+        $kategori = Kategori::select('kategori_id', 'nama_kategori')
             ->orderBy('nama_kategori')
             ->get();
 
@@ -54,11 +54,11 @@ class DokumenController extends Controller
 
     public function indexJson(Request $r)
     {
-        $q = Dokumen::with(['kategori','owner'])
+        $q = Dokumen::with(['kategori', 'owner'])
             ->when($r->filled('q'), fn($w) =>
-                $w->where(function($x) use ($r) {
-                    $x->where('judul','ilike','%'.$r->q.'%')
-                      ->orWhere('nomor_dokumen','ilike','%'.$r->q.'%');
+                $w->where(function ($x) use ($r) {
+                    $x->where('judul', 'ilike', '%' . $r->q . '%')
+                      ->orWhere('nomor_dokumen', 'ilike', '%' . $r->q . '%');
                 })
             )
             ->when($r->filled('status'), fn($w) => $w->where('status', $r->status))
@@ -80,11 +80,15 @@ class DokumenController extends Controller
                 'tanggal_terbit'  => ['required', 'regex:/^\d{2}\/\d{2}\/\d{4}$/'],
                 'kategori_id'     => 'required|exists:kategori,kategori_id',
                 'deskripsi'       => 'required|string',
-                'owner_user_id'   => 'required|exists:users,id_user', // ✅ FIX HERE
+                'owner_user_id'   => 'required|array',
+                'owner_user_id.*' => 'exists:users,id_user',
                 'file'            => 'required|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:20480',
             ]);
 
-            // Convert tanggal dd/mm/yyyy -> yyyy-mm-dd
+            // Tambahkan ini di sini, sebelum upload file ⬇
+            // dd($request->all());
+
+            // Convert tanggal dd/mm/yyyy → yyyy-mm-dd
             $tanggal = \DateTime::createFromFormat('d/m/Y', $request->tanggal_terbit);
             $tanggalFormatted = $tanggal ? $tanggal->format('Y-m-d') : null;
 
@@ -95,17 +99,18 @@ class DokumenController extends Controller
             $base = pathinfo($originalName, PATHINFO_FILENAME);
             $ext  = $file->getClientOriginalExtension();
             $safe = Str::slug($base, '-');
-            $uniqueFileName = now()->format('YmdHis').'-'.Str::random(6).'-'.$safe.'.'.$ext;
+            $uniqueFileName = now()->format('YmdHis') . '-' . Str::random(6) . '-' . $safe . '.' . $ext;
 
             $path = Storage::disk('minio')->putFileAs($folderPath, $file, $uniqueFileName);
 
+            // Simpan ke DB (owner_user_id jadi JSON)
             Dokumen::create([
                 'judul'          => $request->judul,
                 'nomor_dokumen'  => $request->nomor_dokumen,
                 'tanggal_terbit' => $tanggalFormatted,
                 'kategori_id'    => $request->kategori_id,
                 'deskripsi'      => $request->deskripsi,
-                'owner_user_id'  => $request->owner_user_id,
+                'owner_user_id'  => json_encode($request->owner_user_id), // <== WAJIB
                 'file_path'      => $path,
                 'created_by'     => Auth::id(),
                 'status'         => 'draft',
@@ -128,12 +133,20 @@ class DokumenController extends Controller
             'kategori_id'     => 'nullable|integer|exists:kategori,kategori_id',
             'deskripsi'       => 'nullable|string',
             'status'          => 'nullable|string|max:50',
+            'owner_user_id'   => 'nullable|array',
+            'owner_user_id.*' => 'exists:users,id_user',
             'file'            => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:20480',
         ]);
 
+        // Ganti field utama
         $dokumen->fill($request->only([
-            'judul','nomor_dokumen','tanggal_terbit','kategori_id','deskripsi','status'
+            'judul', 'nomor_dokumen', 'tanggal_terbit', 'kategori_id', 'deskripsi', 'status'
         ]));
+
+        // Simpan ulang owner (kalau dikirim)
+        if ($request->filled('owner_user_id')) {
+            $dokumen->owner_user_id = json_encode($request->owner_user_id);
+        }
 
         // Ganti file jika ada
         if ($request->hasFile('file')) {
@@ -147,7 +160,7 @@ class DokumenController extends Controller
             $base = pathinfo($originalName, PATHINFO_FILENAME);
             $ext  = $file->getClientOriginalExtension();
             $safe = Str::slug($base, '-');
-            $uniqueFileName = now()->format('YmdHis').'-'.Str::random(6).'-'.$safe.'.'.$ext;
+            $uniqueFileName = now()->format('YmdHis') . '-' . Str::random(6) . '-' . $safe . '.' . $ext;
 
             $path = Storage::disk('minio')->putFileAs($folderPath, $file, $uniqueFileName);
             $dokumen->file_path = $path;

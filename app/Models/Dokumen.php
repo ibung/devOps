@@ -22,10 +22,13 @@ class Dokumen extends Model
         'deskripsi',
         'created_by',
         'status',
+        'owner_user_id',
     ];
 
+    
     protected $casts = [
         'tanggal_terbit' => 'date',
+        'owner_user_id' => 'array',
     ];
 
     // --- Relations ---
@@ -34,6 +37,11 @@ class Dokumen extends Model
         return $this->belongsTo(Kategori::class, 'kategori_id', 'kategori_id');
     }
 
+    public function owner()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id_user');
+    }
+    
     public function creator()
     {
         return $this->belongsTo(\App\Models\User::class, 'created_by');
