@@ -88,9 +88,13 @@
                             <label class="block text-sm font-semibold mb-2 text-gray-800">Kategori Dokumen <span class="text-red-500">*</span></label>
                             <select name="kategori_id" class="custom-select input-field w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#050C9C] focus:ring-2 focus:ring-[#050C9C]/20 outline-none transition appearance-none bg-white" required>
                                 <option value="" disabled selected>Pilih kategori dokumen</option>
+                                {{-- PERUBAHAN DI SINI (Filter by ID) --}}
                                 @foreach ($kategoris as $kategori)
-                                    <option value="{{ $kategori->kategori_id }}" {{ old('kategori_id') == $kategori->kategori_id ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>
+                                    @if (in_array($kategori->kategori_id, [1, 2]))
+                                        <option value="{{ $kategori->kategori_id }}" {{ old('kategori_id') == $kategori->kategori_id ? 'selected' : '' }}>{{ $kategori->nama_kategori }}</option>
+                                    @endif
                                 @endforeach
+                                {{-- AKHIR PERUBAHAN --}}
                             </select>
                         </div>
                     </div>
